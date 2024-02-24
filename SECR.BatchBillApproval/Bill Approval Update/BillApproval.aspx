@@ -54,10 +54,10 @@
                 <div class="">
 
                     <!-- Heading -->
-                    <div class="justify-content-end d-flex mb-0 mt-4 px-0">
+                    <div class="justify-content-end d-flex mb-0 mt-4 px-0 text-body-secondary">
                         <div class="col-md-6 px-0">
-                            <div class="fw-semibold fs-3 text-dark">
-                                <asp:Literal ID="Literal14" Text="Bill Batch Details" runat="server"></asp:Literal>
+                            <div class="fw-semibold fs-3">
+                                <asp:Literal ID="Literal14" Text="Batch File For Bill Approval" runat="server"></asp:Literal>
                             </div>
                         </div>
                         <div class="col-md-6 px-0 text-end">
@@ -149,8 +149,7 @@
                                 <ItemStyle CssClass="col-md-1" />
                             </asp:TemplateField>
                             <asp:BoundField DataField="RefNo" HeaderText="Batch Ref No" ItemStyle-CssClass="col-xs-3 align-middle text-start fw-light" />
-                            <asp:BoundField DataField="BchDate" HeaderText="Batch Date" ItemStyle-CssClass="col-xs-3 align-middle text-start fw-light" />
-                            <%--<asp:BoundField DataField="Unit" HeaderText="Unit / Office" ItemStyle-CssClass="col-xs-3 align-middle text-start fw-light" />--%>
+                            <asp:BoundField DataField="BchDate" HeaderText="Batch Date" ItemStyle-CssClass="col-xs-3 align-middle text-start fw-light" DataFormatString="{0:dd/MM/yyyy}" />
                             <asp:BoundField DataField="unitName" HeaderText="Unit / Office" ItemStyle-CssClass="col-xs-3 align-middle text-start fw-light" />
                             <asp:BoundField DataField="BillCount" HeaderText="Assigned Bill Count" ItemStyle-CssClass="col-xs-3 align-middle text-start fw-light" />
                             <asp:TemplateField HeaderText="Action">
@@ -164,11 +163,21 @@
                         </Columns>
                     </asp:GridView>
                 </div>
+                <!-- Searched Control Grid Ends -->
 
 
             </div>
         </div>
         <!-- Update Control Div Ends -->
+
+
+
+
+
+
+
+
+
 
 
         <!-- Update UI Starts -->
@@ -177,7 +186,7 @@
 
             <!-- Heading -->
             <div class="col-md-11 mx-auto fw-normal fs-3 fw-medium ps-0 pb-2 text-body-secondary mb-3">
-                <asp:Literal Text="Batch File Wise Bill Approvals Update" runat="server"></asp:Literal>
+                <asp:Literal Text="Batch File For Bill Approval" runat="server"></asp:Literal>
             </div>
 
             <!-- UI Starts -->
@@ -220,29 +229,87 @@
                             <asp:DropDownList ID="ddUnitOffice" runat="server" AutoPostBack="false" class="form-control is-invalid" CssClass=""></asp:DropDownList>
                         </div>
 
-                        <!-- Bill Check Box -->
+                        <!-- Bill Multi Checkbox -->
                         <div class="col-md-6 align-self-end">
                             <div class="mb-1 text-primary-emphasis fw-semibold fs-6">
                                 <asp:Literal ID="Literal2" Text="" runat="server">Select bills for batch<em style="color: red">*</em></asp:Literal>
                             </div>
-                            <asp:ListBox runat="server" ID="ddBillNo" ClientIDMode="Static" SelectionMode="Multiple" AutoPostBack="false" CssClass="form-control rounded shadow border-0"></asp:ListBox>
+                            <asp:ListBox runat="server" ID="ddBillNo" ClientIDMode="Static" SelectionMode="Multiple" OnSelectedIndexChanged="ddBillNo_SelectedIndexChanged" AutoPostBack="true" CssClass="form-control rounded-1 border-1 border-secondar-subtle"></asp:ListBox>
                         </div>
 
                     </div>
                     <!-- 2nd Row Ends -->
 
 
-                    <!-- Submit Button -->
-                    <div class="">
-                        <div class="row mt-5 mb-2">
-                            <div class="col-md-6 text-start">
-                                <asp:Button ID="btnBack" runat="server" Text="Back" OnClick="btnEventClick_btnBack" CssClass="btn btn-custom text-white shadow mb-5" />
-                            </div>
-                            <div class="col-md-6 text-end">
-                                <asp:Button ID="btnSubmit" Enabled="true" runat="server" Text="Submit" OnClick="btnEventClick_btnSubmit" ValidationGroup="finalSubmit" CssClass="btn btn-custom text-white shadow mb-5" />
+                    <!-- Searched Control Grid -->
+                    <div id="BacDiv" visible="false" runat="server" class="mt-5">
+                        <!-- Back Button -->
+                        <div class="">
+                            <div class="row mt-5 mb-2">
+                                <div class="col-md-6 text-start">
+                                    <asp:Button ID="Button1" runat="server" Text="Back" OnClick="btnEventClick_btnBack" CssClass="btn btn-custom text-white shadow mb-5" />
+                                </div>
                             </div>
                         </div>
                     </div>
+
+                    <!-- Searched Control Grid -->
+                    <div id="billDiv" visible="false" runat="server" class="mt-5">
+                        <asp:GridView ShowHeaderWhenEmpty="true" ID="billGrid" runat="server" AutoGenerateColumns="false" AllowPaging="true" PageSize="10"
+                            CssClass="table table-bordered border border-1 border-dark-subtle table-hover text-center grid-custom" OnPageIndexChanging="billGrid_PageIndexChanging" PagerStyle-CssClass="gridview-pager">
+                            <HeaderStyle CssClass="" />
+                            <Columns>
+
+                                <asp:TemplateField ControlStyle-CssClass="col-md-1" HeaderText="Sr.No">
+                                    <ItemTemplate>
+                                        <asp:HiddenField ID="id" runat="server" Value="id" />
+                                        <span>
+                                            <%#Container.DataItemIndex + 1%>
+                                        </span>
+                                    </ItemTemplate>
+                                    <ItemStyle CssClass="col-md-1" />
+                                </asp:TemplateField>
+
+                                <asp:BoundField DataField="RefNo" HeaderText="Bill Ref No" ItemStyle-CssClass="col-xs-3 align-middle text-start fw-light" />
+                                <asp:BoundField DataField="VouNo" HeaderText="Bill No." ItemStyle-CssClass="col-xs-3 align-middle text-start fw-light" />
+                                <asp:BoundField DataField="BillDate" HeaderText="Bill Date" ItemStyle-CssClass="col-xs-3 align-middle text-start fw-light" DataFormatString="{0:dd/MM/yyyy}" />
+                                <asp:BoundField DataField="unitName" HeaderText="Unit / Office" ItemStyle-CssClass="col-xs-3 align-middle text-start fw-light" />
+                                <asp:BoundField DataField="CardNo" HeaderText="Imprest Card No" ItemStyle-CssClass="col-xs-3 align-middle text-start fw-light" />
+                                <asp:BoundField DataField="NetAmount" HeaderText="Bill Amount" ItemStyle-CssClass="col-xs-3 align-middle text-start fw-light" />
+
+                            </Columns>
+                        </asp:GridView>
+
+                        <!-- Total Bill -->
+                        <div class="row px-0">
+
+                            <div class="col-md-9"></div>
+
+                            <div class="col-md-3 align-self-end text-end my-4">
+                                <asp:Literal ID="Literal6" Text="" runat="server">Total Bill Amount</asp:Literal>
+                                <div class="input-group">
+                                    <span class="input-group-text fs-5 fw-semibold">₹</span>
+                                    <asp:TextBox runat="server" ID="txtBillAmount" CssClass="form-control fw-lighter border border-2" ReadOnly="true" placeholder="Total Bill Amount...."></asp:TextBox>
+                                </div>
+                            </div>
+
+                        </div>
+
+
+                        <!-- Submit & Back Button -->
+                        <div class="">
+                            <div class="row mt-5 mb-2">
+                                <div class="col-md-6 text-start">
+                                    <asp:Button ID="btnBack" runat="server" Text="Back" OnClick="btnEventClick_btnBack" CssClass="btn btn-custom text-white shadow mb-5" />
+                                </div>
+                                <div class="col-md-6 text-end">
+                                    <asp:Button ID="btnSubmit" Enabled="true" runat="server" Text="Submit" OnClick="btnEventClick_btnSubmit" ValidationGroup="finalSubmit" CssClass="btn btn-custom text-white shadow mb-5" />
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                    <!-- Searched Control Grid Ends -->
 
 
                 </div>
@@ -251,7 +318,7 @@
 
 
             <!-- Assigned Bill No Grid Starts -->
-           <%-- <div class="card col-md-11 mx-auto mt-1 py-2 shadow-sm rounded-3">
+            <%-- <div class="card col-md-11 mx-auto mt-1 py-2 shadow-sm rounded-3">
                 <div class="card-body">
 
                     <asp:GridView ShowHeaderWhenEmpty="true" ID="GridView1" runat="server" AutoGenerateColumns="false" OnRowCommand="gridSearch_RowCommand" AllowPaging="true" PageSize="10"

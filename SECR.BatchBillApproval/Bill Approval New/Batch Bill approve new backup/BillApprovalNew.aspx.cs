@@ -24,9 +24,6 @@ public partial class Bill_Approval_New_BillApprovalNew : System.Web.UI.Page
             UnitOffice_Dropdown_Bind();
 
             batchRefNo.Text = GetBatchBillRefNo().ToString();
-
-            BacDiv.Visible = true;
-            //DynamicGridView(dt);
         }
     }
 
@@ -176,7 +173,7 @@ public partial class Bill_Approval_New_BillApprovalNew : System.Web.UI.Page
         $@"<script>
             Swal.fire({{ 
                 title: '{title}', 
-                html: '{message}', 
+                text: '{message}', 
                 icon: '{icon}', 
                 confirmButtonText: '{confirmButtonText}', 
                 allowOutsideClick: {allowOutsideClick}
@@ -210,34 +207,6 @@ public partial class Bill_Approval_New_BillApprovalNew : System.Web.UI.Page
         </script>";
         ClientScript.RegisterStartupScript(this.GetType(), "sweetAlert", sweetAlertScript, false);
     }
-
-    private void SA(string titles, string mssg)
-    {
-        string title = titles;
-        string message = mssg;
-        string icon = "error";
-        string confirmButtonText = "OK";
-        string allowOutsideClick = "false"; // Prevent closing on outside click
-
-        // Create a placeholder textarea for user input
-        string sweetAlertScript = $@"
-            <script>
-                Swal.fire({{
-                    title: '{title}',
-                    html: '{message}',
-                    icon: '{icon}',
-                    confirmButtonText: '{confirmButtonText}',
-                    allowOutsideClick: {allowOutsideClick}
-                }})
-            </script>";
-
-        // Register the script
-        ClientScript.RegisterStartupScript(this.GetType(), "sweetAlertWithTextarea", sweetAlertScript, false);
-    }
-
-
-
-
 
 
 
@@ -287,7 +256,6 @@ public partial class Bill_Approval_New_BillApprovalNew : System.Web.UI.Page
             ddBillNo.Items.Insert(0, new ListItem("Select Bill No", "0"));
 
             ListItem selectValuesItem = ddBillNo.Items.FindByValue("0");
-
             if (selectValuesItem != null)
             {
                 selectValuesItem.Selected = true;
@@ -316,10 +284,7 @@ public partial class Bill_Approval_New_BillApprovalNew : System.Web.UI.Page
             ddBillNo.Items.Clear();
             ddBillNo.Items.Insert(0, new ListItem("Select Bill No", "0"));
 
-            BacDiv.Visible = true;
-            searchGridDiv.Visible = false;
-
-            if (ddBillNo.Items.Count == 0) ddBillNo.Items[0].Selected = true;
+            if(ddBillNo.Items.Count == 0) ddBillNo.Items[0].Selected = true;
         }
     }
 
@@ -327,7 +292,7 @@ public partial class Bill_Approval_New_BillApprovalNew : System.Web.UI.Page
 
 
 
-    //=========================={ Multi Checbox Drop Down Event }==========================
+    //=========================={ Drop Down Event }==========================
     protected void ddBillNo_SelectedIndexChanged(object sender, EventArgs e)
     {
         // de-selecting initial heading list item
@@ -348,73 +313,38 @@ public partial class Bill_Approval_New_BillApprovalNew : System.Web.UI.Page
 
         try
         {
-            if (ddUnitOffice.SelectedValue != "0")
+            using (SqlConnection con = new SqlConnection(connectionString))
             {
-                using (SqlConnection con = new SqlConnection(connectionString))
+                con.Open();
+
+                //string sql = "SELECT * FROM Bills1751 WHERE RefNo IN (" + string.Join(",", selectedBillRefNo.Select(bill => "'" + bill + "'")) + ")";
+                string sql = $@"SELECT * FROM Bills1751 as bill INNER JOIN Units751 as unit ON bill.Unit = unit.unitCode WHERE RefNo IN ({string.Join(",", selectedBillRefNo.Select(bill => $"'{bill}'"))})";
+
+                SqlCommand cmd = new SqlCommand(sql, con);
+                //cmd.Parameters.AddWithValue("@RefNo", billNo);
+                cmd.ExecuteNonQuery();
+
+                SqlDataAdapter ad = new SqlDataAdapter(cmd);
+                DataTable dt = new DataTable();
+                ad.Fill(dt);
+
+                con.Close();
+
+                if (dt.Rows.Count > 0)
                 {
-                    con.Open();
+                    searchGridDiv.Visible = true;
 
-                    //string sql = "SELECT * FROM Bills1751 WHERE RefNo IN (" + string.Join(",", selectedBillRefNo.Select(bill => "'" + bill + "'")) + ")";
+                    gridSearch.DataSource = dt;
+                    gridSearch.DataBind();
 
-                    //string sql = $@"SELECT bill.RefNo, bill.VouNo, bill.BillDate, unit.unitName, bill.CardNo, bill.NetAmount, work.ApproveAmt 
-                    //                FROM Bills1751 as bill 
-                    //                INNER JOIN Units751 as unit ON bill.Unit = unit.unitCode 
-                    //                INNER JOIN WorkFlow751 as work ON bill.RefNo = work.DocNo 
-                    //                WHERE bill.RefNo IN ({string.Join(",", selectedBillRefNo.Select(bill => $"'{bill}'"))}) 
-                    //                AND (work.Desk2 = '' OR work.Desk2 = 'ApprovedList')";
-
-                    string sql = $@"SELECT * 
-                                    FROM Bills1751 as bill 
-                                    INNER JOIN Units751 as unit ON bill.Unit = unit.unitCode 
-                                    WHERE bill.RefNo IN ({string.Join(",", selectedBillRefNo.Select(bill => $"'{bill}'"))})";
+                    Session["PaginationDataSource"] = dt;
 
 
-                    SqlCommand cmd = new SqlCommand(sql, con);
-                    //cmd.Parameters.AddWithValue("@RefNo", billNo);
-                    cmd.ExecuteNonQuery();
-
-                    SqlDataAdapter ad = new SqlDataAdapter(cmd);
-                    DataTable dt = new DataTable();
-                    ad.Fill(dt);
-
-                    //dt.Columns.Add("ApproveAmt", typeof(string));
-                    //dt.Columns.Add("PendingAmnt", typeof(string));
-
-                    // performing calculations for pending amount column'
-                    //foreach (DataRow row in dt.Rows)
-                    //{
-                    //    double netAmount = Convert.ToDouble(row["NetAmount"]);
-                    //    double approveAmt = Convert.ToDouble(row["ApproveAmt"]);
-
-                    //    double penAmt = Math.Abs(netAmount - approveAmt);
-
-                    //    row["PendingAmnt"] = penAmt.ToString("N2");
-                    //}
-
-                    con.Close();
-
-                    if (dt.Rows.Count > 0)
-                    {
-                        searchGridDiv.Visible = true;
-
-                        gridSearch.DataSource = dt;
-                        gridSearch.DataBind();
-
-                        Session["PaginationDataSource"] = dt;
-                        Session["Bill_DataTable"] = dt;
-
-                        // sum of total bill amount
-                        double? totalBillAmount = dt.AsEnumerable().Sum(row => row["NetAmount"] is DBNull ? (double?)null : Convert.ToDouble(row["NetAmount"])) ?? 0.0;
-                        txtBillAmount.Text = totalBillAmount.HasValue ? totalBillAmount.Value.ToString("N2") : "0.00";
-
-                        BacDiv.Visible = false;
-                    }
-                    else getSweetAlertErrorMandatory("DataTable", $"no records were found!");
+                    // sum of total bill amount
+                    double? totalBillAmount = dt.AsEnumerable().Sum(row => row["NetAmount"] is DBNull ? (double?)null : Convert.ToDouble(row["NetAmount"])) ?? 0.0;
+                    txtBillAmount.Text = totalBillAmount.HasValue ? totalBillAmount.Value.ToString("N2") : "0.00";
                 }
-            }
-            else
-            {
-                getSweetAlertErrorMandatory("Unit / Office Not Selected!", "Please Select Any Unit / Office To Proceed");
+                else getSweetAlertErrorMandatory("Fail", $"DT has no records");
             }
         }
         catch (Exception ex)
@@ -431,7 +361,7 @@ public partial class Bill_Approval_New_BillApprovalNew : System.Web.UI.Page
         Response.Redirect("BillApproval.aspx");
     }
 
-    protected void btnEventClick_btnSubmit_OLD(object sender, EventArgs e)
+    protected void btnEventClick_btnSubmit(object sender, EventArgs e)
     {
         // de-selecting initial heading list item
         ddBillNo.Items[0].Selected = false;
@@ -446,16 +376,16 @@ public partial class Bill_Approval_New_BillApprovalNew : System.Web.UI.Page
         bool sanctionedAmountAove50Per = CheckSanctionAmountOfUnitOffice(unitRefID);
 
 
-        // creating list for storing items
-        List<string> selectedBillRefNo = new List<string>();
+        //// creating list for storing items
+        //List<string> selectedBillRefNo = new List<string>();
 
-        foreach (ListItem li in ddBillNo.Items)
-        {
-            if (li.Selected == true)
-            {
-                selectedBillRefNo.Add(li.Value);
-            }
-        }
+        //foreach (ListItem li in ddBillNo.Items)
+        //{
+        //    if (li.Selected == true)
+        //    {
+        //        selectedBillRefNo.Add(li.Value);
+        //    }
+        //}
 
         //InsertIntoBatchBill(selectedBillRefNo);
 
@@ -464,114 +394,6 @@ public partial class Bill_Approval_New_BillApprovalNew : System.Web.UI.Page
         //string message = "bills added to batch successfully";
         //string href = "BillApproval.aspx";
         //getSweetAlertSuccessRedirectMandatory(title, message, href);
-    }
-
-    protected void btnEventClick_btnSubmit(object sender, EventArgs e)
-    {
-        // de-selecting initial heading list item
-        ddBillNo.Items[0].Selected = false;
-
-
-
-        string unitCode = ddUnitOffice.SelectedValue; // unit code
-
-        DataTable unitDT = GetUnitsDT(unitCode);
-        string unitRefID = unitDT.Rows[0]["RefId"].ToString();
-
-
-        // creating list for storing items
-        List<string> selectedBillRefNo = new List<string>();
-
-        foreach (ListItem li in ddBillNo.Items)
-        {
-            if (li.Selected == true)
-            {
-                selectedBillRefNo.Add(li.Value);
-            }
-        }
-
-
-
-        DataTable dt = (DataTable)Session["Bill_DataTable"];
-
-        if (dt.Rows.Count > 0)
-        {
-            Dictionary<string, double> imprestCardNoDictionary = new Dictionary<string, double>();
-
-            var imprestCardNoGroups = dt.AsEnumerable().GroupBy(row => row.Field<string>("CardNo"))
-                                                          .Select(group => new
-                                                          {
-                                                              CardNo = group.Key,
-                                                              NetAmount = group.Sum(row => (row["NetAmount"] == DBNull.Value) ? 0.0 : Convert.ToDouble(row["NetAmount"]))
-                                                          });
-
-            foreach (var cardNoGroup in imprestCardNoGroups)
-            {
-                string cardNo = cardNoGroup.CardNo;
-                double netAmount = cardNoGroup.NetAmount;
-
-                // Store the results in the dictionary
-                imprestCardNoDictionary[cardNo] = netAmount;
-            }
-
-            string imprestCardNumber_ = "";
-            List<string> imprestCardNumbersNotAbove50Per = new List<string>();
-
-            bool totalNetAmount_Above50Per_ = true;
-
-            foreach (var kvp in imprestCardNoDictionary)
-            {
-                string cardNo = kvp.Key;
-                double totalNetAmount = kvp.Value;
-
-
-
-                DataTable imprestCardNoDT = GetImprestDT(cardNo);
-
-                DataRow[] cardNoRecords = imprestCardNoDT.Select($"tpImprestNo = '{cardNo}'");
-
-                if (cardNoRecords.Length > 0)
-                {
-                    double maxLimit = Convert.ToDouble(cardNoRecords[0]["tpAmount"]);
-
-                    if (totalNetAmount < (maxLimit / 2))
-                    {
-                        imprestCardNumbersNotAbove50Per.Add(cardNo);
-                        totalNetAmount_Above50Per_ = false;
-                    }
-                }
-            }
-
-            if (imprestCardNumbersNotAbove50Per.Count == 0)
-            {
-                InsertIntoBatchBill(selectedBillRefNo);
-
-                getSweetAlertSuccessRedirectMandatory("Saved!", "Bills Added To Batch Successfully", "BillApproval.aspx");
-            }
-            else
-            {
-                string imprestCardNumbersString = string.Join(", ", imprestCardNumbersNotAbove50Per);
-                SA("Alert!", $"The Bills Of Imprest Card No.:<br/> <strong>{imprestCardNumbersString}</strong> <br/><br/>Are Not Getting Equal Or Above 50% <br/>Of Sanctioned Amount");
-            }
-        }
-    }
-
-    private DataTable GetImprestDT(string imprestCardNo)
-    {
-        using (SqlConnection con = new SqlConnection(connectionString))
-        {
-            con.Open();
-            string sql = "select top 1 * from Topupcard751 where tpImprestNo = @tpImprestNo order by tpDate desc";
-            SqlCommand cmd = new SqlCommand(sql, con);
-            cmd.Parameters.AddWithValue("@tpImprestNo", imprestCardNo);
-
-            SqlDataAdapter ad = new SqlDataAdapter(cmd);
-            DataTable dt = new DataTable();
-            ad.Fill(dt);
-            con.Close();
-
-            return dt;
-        }
     }
 
     private bool CheckSanctionAmountOfUnitOffice(string unitRefID)
@@ -626,46 +448,6 @@ public partial class Bill_Approval_New_BillApprovalNew : System.Web.UI.Page
             //ad.Fill(dt);
 
             con.Close();
-        }
-    }
-
-
-
-
-
-
-
-
-
-
-
-    protected void DynamicGridView(DataTable dtResp)
-    {
-        if (dtResp.Rows.Count > 0)
-        {
-            dynamicDiv.Visible = false;
-
-            // turning OFF column auto generation
-            GridDyanmic.AutoGenerateColumns = true;
-
-            // assigning data source to GridView
-            GridDyanmic.DataSource = dtResp;
-            GridDyanmic.DataBind();
-
-            // Clear existing columns
-            GridDyanmic.Columns.Clear();
-
-            // Dynamically creating BoundFields or Columns using from the data source
-            foreach (DataColumn col in dtResp.Columns)
-            {
-                BoundField boundField = new BoundField();
-                boundField.DataField = col.ColumnName;
-                boundField.HeaderText = col.ColumnName;
-                GridDyanmic.Columns.Add(boundField);
-            }
-
-            // turning ON column auto generation
-            GridDyanmic.AutoGenerateColumns = false;
         }
     }
 }

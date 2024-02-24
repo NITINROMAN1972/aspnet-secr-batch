@@ -8,7 +8,7 @@ $(document).ready(function () {
     $('#ddUnitOffice').select2({
         theme: 'classic',
         placeholder: 'Select here.....',
-        allowClear: true,
+        allowClear: false,
     });
     $('#ddUnitOffice').on('select2:select', function (e) {
         __doPostBack('ddUnitOffice', '');

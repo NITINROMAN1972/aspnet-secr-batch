@@ -38,6 +38,18 @@ public partial class Bill_Approval_Update_BillApproval : System.Web.UI.Page
         gridSearch.DataBind();
     }
 
+    protected void billGrid_PageIndexChanging(object sender, GridViewPageEventArgs e)
+    {
+        //binding GridView to PageIndex object
+        gridSearch.PageIndex = e.NewPageIndex;
+
+        DataTable pagination = (DataTable)Session["PaginationDataSource_Multicheckbox"];
+
+        billGrid.DataSource = pagination;
+        billGrid.DataBind();
+    }
+
+
     private void alert(string mssg)
     {
         // alert pop-up with only message
@@ -94,7 +106,7 @@ public partial class Bill_Approval_Update_BillApproval : System.Web.UI.Page
         }
     }
 
-    
+
 
     //=========================={ Fetch Datatable }==========================
     private DataTable GetBatchNumberDT(string batchNo)
@@ -255,7 +267,29 @@ public partial class Bill_Approval_Update_BillApproval : System.Web.UI.Page
         ClientScript.RegisterStartupScript(this.GetType(), "sweetAlert", sweetAlertScript, false);
     }
 
+    private void SA(string titles, string mssg)
+    {
+        string title = titles;
+        string message = mssg;
+        string icon = "error";
+        string confirmButtonText = "OK";
+        string allowOutsideClick = "false"; // Prevent closing on outside click
 
+        // Create a placeholder textarea for user input
+        string sweetAlertScript = $@"
+            <script>
+                Swal.fire({{
+                    title: '{title}',
+                    html: '{message}',
+                    icon: '{icon}',
+                    confirmButtonText: '{confirmButtonText}',
+                    allowOutsideClick: {allowOutsideClick}
+                }})
+            </script>";
+
+        // Register the script
+        ClientScript.RegisterStartupScript(this.GetType(), "sweetAlertWithTextarea", sweetAlertScript, false);
+    }
 
 
 
@@ -390,6 +424,80 @@ public partial class Bill_Approval_Update_BillApproval : System.Web.UI.Page
 
 
 
+    //=========================={ Multi Checbox Drop Down Event }==========================
+    protected void ddBillNo_SelectedIndexChanged(object sender, EventArgs e)
+    {
+        // de-selecting initial heading list item
+        ddBillNo.Items[0].Selected = false;
+
+        // creating list for storing items
+        List<string> selectedBillRefNo = new List<string>();
+
+        foreach (ListItem li in ddBillNo.Items)
+        {
+            if (li.Selected == true)
+            {
+                selectedBillRefNo.Add(li.Value);
+            }
+        }
+
+        //Response.Write(selectedBillRefNo.ToString());
+
+        try
+        {
+            if (ddUnitOffice.SelectedValue != "0")
+            {
+                using (SqlConnection con = new SqlConnection(connectionString))
+                {
+                    con.Open();
+
+                    string sql = $@"SELECT * FROM Bills1751 as bill INNER JOIN Units751 as unit ON bill.Unit = unit.unitCode WHERE RefNo IN ({string.Join(",", selectedBillRefNo.Select(bill => $"'{bill}'"))})";
+
+                    SqlCommand cmd = new SqlCommand(sql, con);
+                    //cmd.Parameters.AddWithValue("@RefNo", billNo);
+                    cmd.ExecuteNonQuery();
+
+                    SqlDataAdapter ad = new SqlDataAdapter(cmd);
+                    DataTable dt = new DataTable();
+                    ad.Fill(dt);
+
+                    con.Close();
+
+                    if (dt.Rows.Count > 0)
+                    {
+                        searchGridDiv.Visible = true;
+
+                        billGrid.DataSource = dt;
+                        billGrid.DataBind();
+
+                        Session["PaginationDataSource_Multicheckbox"] = dt;
+                        Session["Bill_DataTable"] = dt;
+
+
+                        // sum of total bill amount
+                        double? totalBillAmount = dt.AsEnumerable().Sum(row => row["NetAmount"] is DBNull ? (double?)null : Convert.ToDouble(row["NetAmount"])) ?? 0.0;
+                        txtBillAmount.Text = totalBillAmount.HasValue ? totalBillAmount.Value.ToString("N2") : "0.00";
+
+                        BacDiv.Visible = false;
+                    }
+                    else getSweetAlertErrorMandatory("Fail", $"DT has no records");
+                }
+            }
+            else
+            {
+                getSweetAlertErrorMandatory("Unit / Office Not Selected!", "Please Select Any Unit / Office To Proceed");
+            }
+        }
+        catch (Exception ex)
+        {
+            getSweetAlertErrorMandatory("Execution Failed", $"Got Into Exception");
+        }
+    }
+
+
+
+
+
 
 
     //=========================={ Update - Fill Searched Details }==========================
@@ -434,7 +542,7 @@ public partial class Bill_Approval_Update_BillApproval : System.Web.UI.Page
             DateTime batchDate = DateTime.Parse(dt.Rows[0]["BchDate"].ToString());
             BatchDate.Text = batchDate.ToString("yyyy-MM-dd");
 
-           // updating unit or office dd
+            // updating unit or office dd
             ddUnitOffice.DataSource = dt;
             ddUnitOffice.DataTextField = "unitName";
             ddUnitOffice.DataValueField = "Unit";
@@ -451,7 +559,7 @@ public partial class Bill_Approval_Update_BillApproval : System.Web.UI.Page
         {
             // fetching all bills
             con.Open();
-            string sql = "select * from Bills1751";
+            string sql = "select * from Bills1751 as bill INNER JOIN Units751 as unit ON bill.Unit = unit.unitCode";
             SqlCommand cmd = new SqlCommand(sql, con);
 
             SqlDataAdapter ad = new SqlDataAdapter(cmd);
@@ -500,14 +608,36 @@ public partial class Bill_Approval_Update_BillApproval : System.Web.UI.Page
                 bill_seperate_numbers = joinedBillNos.Split(',').ToList();
             }
 
+
+
+
+
+            DataTable selectedBillTable = dt.Clone();
+
             // making checked items only those are saved
             foreach (ListItem item in ddBillNo.Items)
             {
                 if (bill_seperate_numbers.Contains(item.Value))
                 {
                     item.Selected = true;
+
+                    DataRow[] rows = dt.Select("RefNo = '" + item.Value + "'");
+                    if (rows.Length > 0)
+                    {
+                        selectedBillTable.ImportRow(rows[0]);
+                    }
                 }
             }
+
+            billDiv.Visible = true;
+
+            billGrid.DataSource = selectedBillTable;
+            billGrid.DataBind();
+
+            // sum of total bill amount
+            double? totalBillAmount = selectedBillTable.AsEnumerable().Sum(row => row["NetAmount"] is DBNull ? (double?)null : Convert.ToDouble(row["NetAmount"])) ?? 0.0;
+            txtBillAmount.Text = totalBillAmount.HasValue ? totalBillAmount.Value.ToString("N2") : "0.00";
+
         }
     }
 
@@ -524,11 +654,94 @@ public partial class Bill_Approval_Update_BillApproval : System.Web.UI.Page
 
     protected void btnEventClick_btnSubmit(object sender, EventArgs e)
     {
-        // updating bill nos
-        UpdateBillNumbers();
-       
-        getSweetAlertSuccessRedirectMandatory("Updated", "batch updated successfully", "BillApproval.aspx");
+        CheckForBillAmountAbove50Per();
     }
+
+    private void CheckForBillAmountAbove50Per()
+    {
+        // de-selecting initial heading list item
+        ddBillNo.Items[0].Selected = false;
+
+        DataTable dt = (DataTable)Session["Bill_DataTable"];
+
+        Dictionary<string, double> imprestCardNoDictionary = new Dictionary<string, double>();
+
+        var imprestCardNoGroups = dt.AsEnumerable().GroupBy(row => row.Field<string>("CardNo"))
+                                                      .Select(group => new
+                                                      {
+                                                          CardNo = group.Key,
+                                                          NetAmount = group.Sum(row => (row["NetAmount"] == DBNull.Value) ? 0.0 : Convert.ToDouble(row["NetAmount"]))
+                                                      });
+
+        foreach (var cardNoGroup in imprestCardNoGroups)
+        {
+            string cardNo = cardNoGroup.CardNo;
+            double netAmount = cardNoGroup.NetAmount;
+
+            // Store the results in the dictionary
+            imprestCardNoDictionary[cardNo] = netAmount;
+        }
+
+        string imprestCardNumber_ = "";
+        List<string> imprestCardNumbersNotAbove50Per = new List<string>();
+
+        bool totalNetAmount_Above50Per_ = true;
+
+        foreach (var kvp in imprestCardNoDictionary)
+        {
+            string cardNo = kvp.Key;
+            double totalNetAmount = kvp.Value;
+
+
+
+            DataTable imprestCardNoDT = GetImprestDT(cardNo);
+
+            DataRow[] cardNoRecords = imprestCardNoDT.Select($"tpImprestNo = '{cardNo}'");
+
+            if (cardNoRecords.Length > 0)
+            {
+                double maxLimit = Convert.ToDouble(cardNoRecords[0]["tpAmount"]);
+
+                if (totalNetAmount < (maxLimit / 2))
+                {
+                    imprestCardNumbersNotAbove50Per.Add(cardNo);
+                    totalNetAmount_Above50Per_ = false;
+                }
+            }
+        }
+
+        if (imprestCardNumbersNotAbove50Per.Count == 0)
+        {
+            UpdateBillNumbers();
+        }
+        else
+        {
+            string imprestCardNumbersString = string.Join(", ", imprestCardNumbersNotAbove50Per);
+            SA("Alert!", $"The Bills Of Imprest Card No.:<br/> <strong>{imprestCardNumbersString}</strong> <br/><br/>Are Not Getting Equal Or Above 50% <br/>Of Sanctioned Amount");
+        }
+    }
+
+    private DataTable GetImprestDT(string imprestCardNo)
+    {
+        using (SqlConnection con = new SqlConnection(connectionString))
+        {
+            con.Open();
+            string sql = "select top 1 * from Topupcard751 where tpImprestNo = @tpImprestNo order by tpDate desc";
+            SqlCommand cmd = new SqlCommand(sql, con);
+            cmd.Parameters.AddWithValue("@tpImprestNo", imprestCardNo);
+
+            SqlDataAdapter ad = new SqlDataAdapter(cmd);
+            DataTable dt = new DataTable();
+            ad.Fill(dt);
+            con.Close();
+
+            return dt;
+        }
+    }
+
+
+
+
 
     private void UpdateBillNumbers()
     {
@@ -559,13 +772,16 @@ public partial class Bill_Approval_Update_BillApproval : System.Web.UI.Page
             SqlCommand cmd = new SqlCommand(sql, con);
             cmd.Parameters.AddWithValue("@BchChilds", joinedBillNos);
             cmd.Parameters.AddWithValue("@RefNo", batchBillRefNo);
-            cmd.ExecuteNonQuery();
+            int k = cmd.ExecuteNonQuery();
 
             //SqlDataAdapter ad = new SqlDataAdapter(cmd);
             //DataTable dt = new DataTable();
             //ad.Fill(dt);
 
             con.Close();
+
+
+            if(k > 0) getSweetAlertSuccessRedirectMandatory("Bills Updated", "Batch Updated Successfully", "BillApproval.aspx");
         }
     }
 

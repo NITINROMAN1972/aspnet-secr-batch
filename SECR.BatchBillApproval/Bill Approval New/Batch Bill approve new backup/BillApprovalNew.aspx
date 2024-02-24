@@ -47,7 +47,7 @@
 
         <!-- Heading -->
         <div class="col-md-11 mx-auto fw-normal fs-3 fw-medium ps-0 pb-2 text-body-secondary mb-3">
-            <asp:Literal Text="Batch File For Bill Approval" runat="server"></asp:Literal>
+            <asp:Literal Text="Batch File Wise Bill Approvals" runat="server"></asp:Literal>
         </div>
 
         <!-- UI Starts -->
@@ -62,7 +62,7 @@
                     <!-- Batch Reference No -->
                     <div class="col-md-6 align-self-end">
                         <div class="mb-1 text-primary-emphasis fw-semibold fs-6">
-                            <asp:Literal ID="Literal10" Text="" runat="server">Batch Reference No (Auto Generated)</asp:Literal>
+                            <asp:Literal ID="Literal10" Text="Bill Number" runat="server">Batch Reference No (Auto Generated)</asp:Literal>
                         </div>
                         <asp:TextBox runat="server" ID="batchRefNo" type="text" ReadOnly="true" CssClass="form-control border border-secondary-subtle bg-light rounded-1 fs-6 fw-light py-1"></asp:TextBox>
                     </div>
@@ -95,28 +95,15 @@
                         <asp:DropDownList ID="ddUnitOffice" OnSelectedIndexChanged="ddEventClick_ddUnitOffice" runat="server" AutoPostBack="false" class="form-control is-invalid" CssClass=""></asp:DropDownList>
                     </div>
 
-                    <!-- Bill No Multi Checkboxs -->
+                    <!-- Bill Check Box -->
                     <div class="col-md-6 align-self-end">
                         <div class="mb-1 text-primary-emphasis fw-semibold fs-6">
                             <asp:Literal ID="Literal2" Text="" runat="server">Select bills for batch<em style="color: red">*</em></asp:Literal>
                         </div>
-                        <asp:ListBox runat="server" ID="ddBillNo" ClientIDMode="Static" SelectionMode="Multiple" OnSelectedIndexChanged="ddBillNo_SelectedIndexChanged" AutoPostBack="true" CssClass="form-control rounded-1 border-1 border-secondar-subtle"></asp:ListBox>
+                        <asp:ListBox runat="server" ID="ddBillNo" ClientIDMode="Static" SelectionMode="Multiple" OnSelectedIndexChanged="ddBillNo_SelectedIndexChanged" AutoPostBack="true" CssClass="form-control rounded shadow border-0"></asp:ListBox>
                     </div>
-
                 </div>
                 <!-- 2nd Row Ends -->
-
-                <!-- Searched Control Grid -->
-                <div id="BacDiv" visible="false" runat="server" class="mt-5">
-                    <!-- Back Button -->
-                    <div class="">
-                        <div class="row mt-5 mb-2">
-                            <div class="col-md-6 text-start">
-                                <asp:Button ID="Button1" runat="server" Text="Back" OnClick="btnEventClick_btnBack" CssClass="btn btn-custom text-white shadow mb-5" />
-                            </div>
-                        </div>
-                    </div>
-                </div>
 
                 <!-- Searched Control Grid -->
                 <div id="searchGridDiv" visible="false" runat="server" class="mt-5">
@@ -136,6 +123,7 @@
                             </asp:TemplateField>
 
                             <asp:BoundField DataField="RefNo" HeaderText="Bill Ref No" ItemStyle-CssClass="col-xs-3 align-middle text-start fw-light" />
+                            <asp:BoundField DataField="Vendor" HeaderText="Vendor" ItemStyle-CssClass="col-xs-3 align-middle text-start fw-light" />
                             <asp:BoundField DataField="VouNo" HeaderText="Bill No." ItemStyle-CssClass="col-xs-3 align-middle text-start fw-light" />
                             <asp:BoundField DataField="BillDate" HeaderText="Bill Date" ItemStyle-CssClass="col-xs-3 align-middle text-start fw-light" DataFormatString="{0:dd/MM/yyyy}" />
                             <asp:BoundField DataField="unitName" HeaderText="Unit / Office" ItemStyle-CssClass="col-xs-3 align-middle text-start fw-light" />
@@ -161,7 +149,7 @@
                     </div>
 
 
-                    <!-- Submit & Back Button -->
+                    <!-- Submit Button -->
                     <div class="">
                         <div class="row mt-5 mb-2">
                             <div class="col-md-6 text-start">
@@ -182,29 +170,6 @@
             </div>
         </div>
         <!-- UI Ends -->
-
-
-
-
-
-
-        <div id="dynamicDiv" runat="server" visible="false" class="card">
-            <div class="card-body">
-                <asp:GridView ShowHeaderWhenEmpty="true" ID="GridDyanmic" runat="server" AutoGenerateColumns="false" CssClass="table table-bordered table-striped table-hover text-center">
-                    <HeaderStyle CssClass="align-middle" />
-                    <Columns>
-                        <asp:TemplateField ControlStyle-CssClass="col-xs-1" HeaderText="Sr.No">
-                            <ItemTemplate>
-                                <asp:HiddenField ID="id" runat="server" Value="id" />
-                                <span>
-                                    <%#Container.DataItemIndex + 1%>
-                                </span>
-                            </ItemTemplate>
-                        </asp:TemplateField>
-                    </Columns>
-                </asp:GridView>
-            </div>
-        </div>
 
 
     </form>
